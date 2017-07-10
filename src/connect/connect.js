@@ -55,7 +55,8 @@ export function createConnect({
       areStatePropsEqual = shallowEqual,
       areMergedPropsEqual = shallowEqual,
       ...extraOptions
-    } = {}
+    } = {},
+    builder,
   ) {
     const initMapStateToProps = match(mapStateToProps, mapStateToPropsFactories, 'mapStateToProps')
     const initMapDispatchToProps = match(mapDispatchToProps, mapDispatchToPropsFactories, 'mapDispatchToProps')
@@ -83,7 +84,9 @@ export function createConnect({
 
       // any extra options args can override defaults of connect or connectAdvanced
       ...extraOptions
-    })
+    },
+      builder,
+    )
   }
 }
 

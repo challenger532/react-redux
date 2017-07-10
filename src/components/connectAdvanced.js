@@ -73,7 +73,10 @@ export default function connectAdvanced(
 
     // additional options are passed through to the selectorFactory
     ...connectOptions
-  } = {}
+  } = {},
+
+  // the builder used to build a store, used as replacement to redux's Provider class
+  builder = {getStore: () => undefined},
 ) {
   const subscriptionKey = storeKey + 'Subscription'
   const version = hotReloadingVersion++
@@ -119,7 +122,7 @@ export default function connectAdvanced(
         this.version = version
         this.state = {}
         this.renderCount = 0
-        this.store = props[storeKey] || context[storeKey]
+        this.store = props[storeKey] || context[storeKey] || builder.getStore()
         this.propsMode = Boolean(props[storeKey])
         this.setWrappedInstance = this.setWrappedInstance.bind(this)
 
