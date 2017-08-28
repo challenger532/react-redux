@@ -78,6 +78,7 @@ It does not modify the component class passed to it; instead, it *returns* a new
   * [`areOwnPropsEqual`] *(Function)*: When pure, compares incoming props to its previous value. Default value: `shallowEqual`
   * [`areStatePropsEqual`] *(Function)*: When pure, compares the result of `mapStateToProps` to its previous value. Default value: `shallowEqual`
   * [`areMergedPropsEqual`] *(Function)*: When pure, compares the result of `mergeProps` to its previous value. Default value: `shallowEqual`
+  * [`storeKey`] *(String)*: The key of the context from where to read the store. You probably only need this if you are in the inadvisable position of having multiple stores. Default value: `'store'`
 
 <a id="connect-arguments-arity"></a>
 ##### The arity of mapStateToProps and mapDispatchToProps determines whether they receive ownProps
@@ -118,11 +119,11 @@ const mapStateToProps = (...args) => {
 <a id="connect-optimizing"></a>
 ##### Optimizing connect when options.pure is true
 
-When `options.pure` is true, `connect` performs several equality checks that are used to avoid unncessary calls to `mapStateToProps`, `mapDispatchToProps`, `mergeProps`, and ultimately to `render`. These include `areStatesEqual`, `areOwnPropsEqual`, `areStatePropsEqual`, and `areMergedPropsEqual`. While the defaults are probably appropriate 99% of the time, you may wish to override them with custom implementations for performance or other reasons. Here are several examples:
+When `options.pure` is true, `connect` performs several equality checks that are used to avoid unnecessary calls to `mapStateToProps`, `mapDispatchToProps`, `mergeProps`, and ultimately to `render`. These include `areStatesEqual`, `areOwnPropsEqual`, `areStatePropsEqual`, and `areMergedPropsEqual`. While the defaults are probably appropriate 99% of the time, you may wish to override them with custom implementations for performance or other reasons. Here are several examples:
 
 * You may wish to override `areStatesEqual` if your `mapStateToProps` function is computationally expensive and is also only concerned with a small slice of your state. For example: `areStatesEqual: (next, prev) => prev.entities.todos === next.entities.todos`; this would effectively ignore state changes for everything but that slice of state.
 
-* You may wish to override `areStatesEqual` to always return false (`areStatesEqual: () => false`) if you have impure reducers that mutate your store state. (This would likely impact the other equality checks is well, depending on your `mapStateToProps` function.)
+* You may wish to override `areStatesEqual` to always return false (`areStatesEqual: () => false`) if you have impure reducers that mutate your store state. (This would likely impact the other equality checks as well, depending on your `mapStateToProps` function.)
 
 * You may wish to override `areOwnPropsEqual` as a way to whitelist incoming props. You'd also have to implement `mapStateToProps`, `mapDispatchToProps` and `mergeProps` to also whitelist props. (It may be simpler to achieve this other ways, for example by using [recompose's mapProps](https://github.com/acdlite/recompose/blob/master/docs/API.md#mapprops).)
 
@@ -374,7 +375,7 @@ function selectorFactory(dispatch) {
   const actions = bindActionCreators(actionCreators, dispatch)
   const addTodo = (text) => actions.addTodo(ownProps.userId, text)
   return (nextState, nextOwnProps) => {
-    const todos = nextState.todos[nextProps.userId]
+    const todos = nextState.todos[nextOwnProps.userId]
     const nextResult = { ...nextOwnProps, todos, addTodo }
     ownProps = nextOwnProps
     if (!shallowEqual(result, nextResult)) result = nextResult
@@ -384,3 +385,41 @@ function selectorFactory(dispatch) {
 export default connectAdvanced(selectorFactory)(TodoApp)
 ```
 
+<a id="createProvider"></a>
+### `createProvider([storeKey])`
+
+Creates a new `<Provider>` which will set the Redux Store on the passed key of the context. You probably only need this if you are in the inadvisable position of having multiple stores. You will also need to pass the same `storeKey` to the `options` argument of [`connect`](#connectmapstatetoprops-mapdispatchtoprops-mergeprops-options)
+
+<a id="createProvider-arguments"></a>
+#### Arguments
+
+* [`storeKey`] (*String*): The key of the context on which to set the store. Default value: `'store'`
+
+#### Examples
+Before creating multiple stores, please go through this FAQ: [Can or should I create multiple stores?](http://redux.js.org/docs/faq/StoreSetup.html#can-or-should-i-create-multiple-stores-can-i-import-my-store-directly-and-use-it-in-components-myself)
+
+```js
+import {connect, createProvider} from 'react-redux'
+
+const STORE_KEY = 'componentStore'
+
+export const Provider = createProvider(STORE_KEY)
+
+function connectExtended(
+  mapStateToProps,
+  mapDispatchToProps,
+  mergeProps,
+  options = {}
+) {
+  options.storeKey = STORE_KEY
+  return connect(
+    mapStateToProps,
+    mapDispatchToProps,
+    mergeProps,
+    options
+  )
+}
+
+export {connectExtended as connect}
+```
+Now you can import the above `Provider` and `connect` and use them.
